@@ -586,26 +586,42 @@ function createSkateboard() {
 function createPolice() {
     const policeGroup = new THREE.Group();
 
-    // Body
-    const bodyGeometry = new THREE.CapsuleGeometry(0.4, 1, 4, 8);
+    // Body (cylinder + spheres for capsule effect)
+    const bodyGeometry = new THREE.CylinderGeometry(0.35, 0.4, 1.2, 8);
     const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x000066 });
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    body.position.y = 1.2;
+    body.position.y = 1.1;
     policeGroup.add(body);
 
+    // Shoulders
+    const shoulderGeometry = new THREE.SphereGeometry(0.35, 8, 8);
+    const shoulders = new THREE.Mesh(shoulderGeometry, bodyMaterial);
+    shoulders.position.y = 1.7;
+    policeGroup.add(shoulders);
+
     // Head
-    const headGeometry = new THREE.SphereGeometry(0.25, 16, 16);
+    const headGeometry = new THREE.SphereGeometry(0.28, 16, 16);
     const headMaterial = new THREE.MeshStandardMaterial({ color: 0xffcc99 });
     const head = new THREE.Mesh(headGeometry, headMaterial);
-    head.position.y = 2;
+    head.position.y = 2.1;
     policeGroup.add(head);
 
     // Hat
-    const hatGeometry = new THREE.CylinderGeometry(0.2, 0.3, 0.15, 8);
+    const hatGeometry = new THREE.CylinderGeometry(0.15, 0.32, 0.2, 8);
     const hatMaterial = new THREE.MeshStandardMaterial({ color: 0x000044 });
     const hat = new THREE.Mesh(hatGeometry, hatMaterial);
-    hat.position.y = 2.3;
+    hat.position.y = 2.4;
     policeGroup.add(hat);
+
+    // Legs
+    const legGeometry = new THREE.CylinderGeometry(0.12, 0.12, 0.8, 6);
+    const legMaterial = new THREE.MeshStandardMaterial({ color: 0x222222 });
+    const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+    leftLeg.position.set(-0.15, 0.4, 0);
+    policeGroup.add(leftLeg);
+    const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+    rightLeg.position.set(0.15, 0.4, 0);
+    policeGroup.add(rightLeg);
 
     // Red/blue lights effect
     const redLight = new THREE.PointLight(0xff0000, 2, 10);
