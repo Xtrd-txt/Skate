@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skate Simulator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- UI Overlay -->
+        <div id="ui-overlay">
+            <div id="timer">00:00</div>
+            <div id="score">Score: 0</div>
+            <div id="speed">Speed: 0 km/h</div>
+            <div id="combo" class="hidden">Combo x1</div>
+        </div>
+
+        <!-- Balance indicator (for grinds) -->
+        <div id="balance-container" class="hidden">
+            <div id="balance-bar">
+                <div id="balance-indicator"></div>
+                <div id="balance-center"></div>
+            </div>
+            <div id="balance-text">BALANCE!</div>
+        </div>
+
+        <!-- Start screen -->
+        <div id="start-screen">
+            <h1>SKATE SIMULATOR</h1>
+            <div class="controls-info">
+                <h3>Controls:</h3>
+                <p><span class="key">W</span> - Push (accelerate)</p>
+                <p><span class="key">S</span> - Lean back / Brake</p>
+                <p><span class="key">A</span> <span class="key">D</span> - Turn left/right</p>
+                <p><span class="key">SHIFT</span> - Lean forward</p>
+                <p><span class="key">SPACE</span> - Jump / Ollie</p>
+                <p><span class="key">MOUSE</span> - Balance on rails</p>
+            </div>
+            <button id="start-btn">START</button>
+            <p class="hint">Complete the course as fast as you can!</p>
+        </div>
+
+        <!-- Game over screen -->
+        <div id="gameover-screen" class="hidden">
+            <h2>LEVEL COMPLETE!</h2>
+            <div id="final-time">Time: 00:00</div>
+            <div id="final-score">Score: 0</div>
+            <button id="restart-btn">NEXT LEVEL</button>
+        </div>
+
+        <!-- Crash screen -->
+        <div id="crash-screen" class="hidden">
+            <h2>WIPEOUT!</h2>
+            <button id="retry-btn">TRY AGAIN</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
