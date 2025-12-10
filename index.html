@@ -408,9 +408,8 @@ const CONFIG = {
     jumpForce: 14,
 
     // Mouse control
-    mouseAccelSensitivity: 0.015,
-    mouseTurnSensitivity: 0.003,
-    turnSmoothing: 0.08,
+    mouseAccelSensitivity: 0.08,
+    turnSpeed: 3.5,
 
     // Lanes
     laneWidth: 4,
@@ -458,7 +457,6 @@ const gameState = {
     position: new THREE.Vector3(0, 0.15, 0),
     velocity: new THREE.Vector3(0, 0, 0),
     rotation: 0,
-    targetRotation: 0,
     currentLane: 1,
 
     // Physics
@@ -936,24 +934,48 @@ function cleanupOldObjects() {
 
 // ==================== INPUT HANDLING ====================
 function initControls() {
-    // Mouse movement
+    // Mouse movement - works with pointer lock
     document.addEventListener('mousemove', (e) => {
         if (!gameState.running) return;
 
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
+        // Use movementX/Y for pointer lock, fallback to position
+        if (document.pointerLockElement) {
+            // Pointer locked - use relative movement
+            gameState.mouseX += e.movementX * 0.002;
+            gameState.mouseY -= e.movementY * 0.002;
 
-        gameState.mouseX = (e.clientX - centerX) / centerX;
-        gameState.mouseY = (centerY - e.clientY) / centerY;
+            // Clamp values
+            gameState.mouseX = Math.max(-1, Math.min(1, gameState.mouseX));
+            gameState.mouseY = Math.max(-1, Math.min(1, gameState.mouseY));
+        } else {
+            // No pointer lock - use absolute position
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            gameState.mouseX = (e.clientX - centerX) / centerX;
+            gameState.mouseY = (centerY - e.clientY) / centerY;
+        }
 
         // Update crosshair
         const crosshair = document.getElementById('crosshair');
-        crosshair.style.left = e.clientX + 'px';
-        crosshair.style.top = e.clientY + 'px';
+        if (document.pointerLockElement) {
+            crosshair.style.left = window.innerWidth / 2 + 'px';
+            crosshair.style.top = window.innerHeight / 2 + 'px';
+        } else {
+            crosshair.style.left = e.clientX + 'px';
+            crosshair.style.top = e.clientY + 'px';
+        }
 
         // Balance control during grind
         if (gameState.isGrinding) {
             gameState.mouseDeltaX = gameState.mouseX;
+        }
+    });
+
+    // Reset mouse on pointer lock change
+    document.addEventListener('pointerlockchange', () => {
+        if (!document.pointerLockElement) {
+            gameState.mouseX = 0;
+            gameState.mouseY = 0;
         }
     });
 
@@ -981,9 +1003,9 @@ function initControls() {
         }
     });
 
-    // Pointer lock
+    // Pointer lock on click
     document.addEventListener('click', () => {
-        if (gameState.running) {
+        if (gameState.running && !document.pointerLockElement) {
             document.body.requestPointerLock?.();
         }
     });
@@ -1020,8 +1042,6 @@ function updatePhysics(deltaTime) {
     } else {
         // Mouse control for acceleration/deceleration
         if (gameState.onGround) {
-            const currentSpeed = Math.sqrt(gameState.velocity.x ** 2 + gameState.velocity.z ** 2);
-
             // Forward/backward based on mouse Y
             if (gameState.mouseY > 0.1) {
                 // Mouse forward - accelerate
@@ -1032,17 +1052,15 @@ function updatePhysics(deltaTime) {
                 // Mouse back - brake
                 gameState.velocity.multiplyScalar(0.98);
             }
-
-            // Turning based on mouse X
-            gameState.targetRotation -= gameState.mouseX * CONFIG.mouseTurnSensitivity;
         }
 
-        // Smooth rotation
-        gameState.rotation = THREE.MathUtils.lerp(
-            gameState.rotation,
-            gameState.targetRotation,
-            CONFIG.turnSmoothing
-        );
+        // Direct turning based on mouse X - works always
+        const turnAmount = gameState.mouseX * CONFIG.turnSpeed * deltaTime;
+        gameState.rotation -= turnAmount;
+
+        // Decay mouse position back to center
+        gameState.mouseX *= 0.95;
+        gameState.mouseY *= 0.98;
 
         // Jump
         if (gameState.keys['Space'] && gameState.onGround) {
@@ -1325,19 +1343,27 @@ function updatePolice(deltaTime) {
 function updateCamera() {
     if (!gameState.running) return;
 
-    const targetPos = new THREE.Vector3(
-        gameState.position.x * 0.3,
-        gameState.position.y + CONFIG.cameraHeight,
-        gameState.position.z + 2
-    );
+    // Camera locked behind skateboard
+    const cameraOffset = new THREE.Vector3(0, CONFIG.cameraHeight, 4);
 
-    camera.position.lerp(targetPos, CONFIG.cameraSmoothness);
+    // Rotate offset by skateboard rotation
+    const rotatedOffset = cameraOffset.clone();
+    rotatedOffset.x = cameraOffset.x * Math.cos(gameState.rotation) - cameraOffset.z * Math.sin(gameState.rotation);
+    rotatedOffset.z = cameraOffset.x * Math.sin(gameState.rotation) + cameraOffset.z * Math.cos(gameState.rotation);
 
-    const lookTarget = new THREE.Vector3(
-        gameState.position.x,
-        gameState.position.y + 1,
-        gameState.position.z - CONFIG.cameraLookAhead
+    const targetPos = gameState.position.clone().add(rotatedOffset);
+
+    // Smooth camera follow
+    camera.position.lerp(targetPos, 0.15);
+
+    // Look at point ahead of skateboard
+    const lookAhead = new THREE.Vector3(
+        Math.sin(gameState.rotation) * 10,
+        0,
+        -Math.cos(gameState.rotation) * 10
     );
+    const lookTarget = gameState.position.clone().add(lookAhead);
+    lookTarget.y = gameState.position.y + 0.5;
 
     camera.lookAt(lookTarget);
 }
@@ -1467,7 +1493,8 @@ function startGame() {
     gameState.position.set(0, 0.15, 0);
     gameState.velocity.set(0, 0, -CONFIG.minSpeed);
     gameState.rotation = 0;
-    gameState.targetRotation = 0;
+    gameState.mouseX = 0;
+    gameState.mouseY = 0;
     gameState.onGround = true;
     gameState.isGrinding = false;
     gameState.balance = 0;
